@@ -2,7 +2,7 @@ import tkinter
 import  tkinter as tk
 from tkinter import Menu, Scrollbar, StringVar, ttk,font,filedialog,messagebox,colorchooser
 import os
-from tkinter.constants import TRUE
+from tkinter.constants import FALSE, TRUE
 
 
 main_win = tkinter.Tk()         #main software screen window
@@ -144,17 +144,50 @@ font_size_combobox.bind('<<ComboboxSelected>>',change_font_size)
 font_bold_icon = tk.PhotoImage(file='icons/bold.png')
 
 font_bold_btn = ttk.Button(toolbar, image=font_bold_icon)
-font_bold_btn.grid(row=0,column=3,padx=5)
+font_bold_btn.grid(row=0,column=2,padx=5)
+
+def change_bold():
+    text_property = tk.font.Font(font=text_editor['font'])
+    if text_property.actual()['weight'] =='normal':
+        text_editor.configure(font=(current_font_family,current_font_size,'bold'))
+    if text_property.actual()['weight'] == 'bold':
+        text_editor.configure(font=(current_font_family,current_font_size,'normal'))
+
+font_bold_btn.configure(command=change_bold)
+
 
 ###----------font italic button--------------------
 font_italic_icon = tk.PhotoImage(file='icons/italic.png')
 font_italic_btn= ttk.Button(toolbar,image=font_italic_icon)
 font_italic_btn.grid(row=0,column=3,padx=5)
 
+def change_italic():
+    text_property = tk.font.Font(font=text_editor['font'])
+    if text_property.actual()['slant']=='italic':
+        text_editor.configure(font=(current_font_family,current_font_size,'normal'))
+    elif text_property.actual()['slant']=='roman':
+        text_editor.configure(font=(current_font_family,current_font_size,'italic'))
+
+font_italic_btn.configure(command=change_italic)
+
+
+
+
 ###---------font underline button--------------------
 font_underline_icon = tk.PhotoImage(file='icons/underline.png')
 font_underline_btn = ttk.Button(toolbar, image=font_underline_icon)
 font_underline_btn.grid(row=0,column=4,padx=5)
+
+def change_underline():
+    text_property = tk.font.Font(font=text_editor['font'])
+    if text_property.actual()['underline']==TRUE:
+        text_editor.configure(font=(current_font_family,current_font_size,'normal'))
+    elif text_property.actual()['underline']==FALSE:
+        text_editor.configure(font=(current_font_family,current_font_size,'underline'))
+
+font_underline_btn.configure(command=change_underline)
+
+
 
 ###---------font color button--------------------------
 font_color_icon = tk.PhotoImage(file='icons/font_color.png')
