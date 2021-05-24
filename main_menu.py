@@ -97,7 +97,7 @@ def save_as_file_func(event=None):
     except:
         pass
 
-file_menu.add_command(label='Save As',image=save_as_icon,compound=tk.LEFT,accelerator='Ctrl+Alt+S',command=save_as_file_func)    #tk.LEFT for assigning new icon left of label, accelerator for shortcutkey
+file_menu.add_command(label='Save As',image=save_as_icon,compound=tk.LEFT,accelerator='Ctrl+z',command=save_as_file_func)    #tk.LEFT for assigning new icon left of label, accelerator for shortcutkey
 
 #save_as functionality finish-----------------------------------------------
 
@@ -159,7 +159,33 @@ def find_replace_text_func(event=None):
 
 
     def replace_text_func(event=None):
-        pass
+        text_to_be_find = str(find_text_entry.get()).lower()
+        text_to_place = str(replace_text_entry.get())
+        editors_text = str(text_editor.get(1.0,'end')).lower().split('\n')
+        len_finding = len(text_to_be_find)
+        len_replacing = len(text_to_place)
+    
+        text_editor.tag_remove('match',1.0,'end')
+        text_editor.tag_remove('replace',1.0,'end')
+
+        text_editor.tag_config("replace",background='orange', foreground='blue')
+        
+        
+        for j,line in enumerate(editors_text):
+            len_editor_text= len(line)
+            i=0
+            while i<=(len_editor_text-len_finding):
+                if(text_to_be_find[0]==line[i]):
+                    if(text_to_be_find==line[i:i+len_finding]):
+                        text_editor.delete(f'{j+1}.{i}',f'{j+1}.{i+len_finding}')
+                        text_editor.insert(f'{j+1}.{i}',text_to_place)
+                        text_editor.tag_add('replace',f'{j+1}.{i}',f'{j+1}.{i+len_replacing}')
+                        i+=len_finding
+                    else:
+                        i+=1
+                else:
+                    i+=1
+
 
     popup_dialogue = tk.Toplevel()
     popup_dialogue.geometry('300x200+100+50')
@@ -192,18 +218,22 @@ def find_replace_text_func(event=None):
     popup_dialogue.mainloop()
     
   
-
-
-
 edit_menu.add_command(label='Find',image= find_icon,compound=tk.LEFT,accelerator='Ctrl+F',command=find_replace_text_func)
 
+##-----------------------find menu finish----------------------------------------------------
 
 
-
+##-------------copy, cut, paste, clear_all all menu at a place ------------------------------
 edit_menu.add_command(label='Copy',image= copy_icon,compound=tk.LEFT,accelerator='Ctrl+C',command=lambda:text_editor.event_generate('<Control c>'))
 edit_menu.add_command(label='Cut',image= cut_icon,compound=tk.LEFT,accelerator='Ctrl+X',command=lambda:text_editor.event_generate('<Control x>'))
 edit_menu.add_command(label='Paste',image= paste_icon,compound=tk.LEFT,accelerator='Ctrl+V',command=lambda:text_editor.event_generate('<Control v>'))
 edit_menu.add_command(label='Clear All',image= clear_all_icon,compound=tk.LEFT,accelerator='Ctrl+Shift+d',command=lambda:text_editor.delete(1.0,'end'))
+
+## --------------copy, cut , paste , clear_all all menu finish--------------------------------
+
+###----------------edit menu finish-----------------------------------------------------------
+
+
 
 #--------------view menu------------------------------------------
 ##-----------icon import and naming for view menu----------------
@@ -212,8 +242,39 @@ status_bar_icon=tk.PhotoImage(file='icons/status_bar.png')
 
 
 view_menu = tk.Menu(main_menu, tearoff=False)
-view_menu.add_checkbutton(label='Tool Bar',image=tool_bar_icon,compound=tk.LEFT)
-view_menu.add_checkbutton(label='Status Bar',image=status_bar_icon,compound=tk.LEFT)
+
+show_toolbar= tk.BooleanVar()
+show_toolbar.set(True)
+show_statusbar= tk.BooleanVar()
+show_statusbar.set(True)
+
+def hide_toolbar_func(event=None):
+    global show_toolbar
+    if show_toolbar:
+        toolbar.pack_forget()
+        show_toolbar=False
+    else:
+        text_editor.pack_forget()
+        status_bar.pack_forget()
+        toolbar.pack(side=tk.TOP,fill=tk.X)
+        text_editor.pack(fill= tk.BOTH, expand=True)
+        status_bar.pack(side=tk.BOTTOM)
+        show_toolbar=True
+
+
+
+def hide_statusbar_func():
+    global show_statusbar
+    if show_statusbar:
+        status_bar.pack_forget()
+        show_statusbar=False
+    else:
+        status_bar.pack(side=tk.BOTTOM)
+        show_statusbar=True
+
+
+view_menu.add_checkbutton(label='Tool Bar',onvalue=True,offvalue=False,variable=show_toolbar,image=tool_bar_icon,compound=tk.LEFT,command=hide_toolbar_func)
+view_menu.add_checkbutton(label='Status Bar',onvalue=True,offvalue=False,variable=show_statusbar,image=status_bar_icon,compound=tk.LEFT,command=hide_statusbar_func)
 
 
 #---------------color theme menu--------------------------------------
@@ -232,17 +293,24 @@ color_theme_menu = tk.Menu(main_menu, tearoff=False)
 color_theme_icons=(light_default_icon,light_plus_icon,dark_icon,red_icon,monokai_icon,night_blue_icon)
 color_theme_dict={
     'Light Default':('#000000','#ffffff'),
-    'Light Plus':('#020202','#fdfdfd'),
-    'Dark':('#f3f3f3','#040404'),
-    'Red':('#001111','#fc0111'),
-    'Monokai':('#022f11','#cccccc'),
-    'Night Blue':('#ff0809','#0f1fff')
+    'Light Plus':('#020202','#F4F6F6'),
+    'Dark':('#f3f3f3','#566573'),
+    'Red':('#001111','#EC7063'),
+    'Monokai':('#000000','#FAD7A0'),
+    'Night Blue':('#111111','#2E86C1')
 }
 
+#----------change theme functionality--------------------------------
+def change_theme_func():
+    theme_selected = color_theme_var.get()
+    color_tuple = color_theme_dict.get(theme_selected)
+    fg_color,bg_color = color_tuple
+    text_editor.config(fg=fg_color,background=bg_color)
+    
 
 color_theme_var = tk.StringVar()
 for count,i in enumerate(color_theme_dict):
-    color_theme_menu.add_radiobutton(label=i,image=color_theme_icons[count],compound=tk.LEFT, variable=color_theme_var)
+    color_theme_menu.add_radiobutton(label=i,image=color_theme_icons[count],compound=tk.LEFT, variable=color_theme_var,command=change_theme_func)
 
 
 #cascade drop down option while clicking on menu option 
@@ -441,7 +509,24 @@ text_editor.bind('<<Modified>>',change_count)
 
 ##-----------------status bar finish-------------------------------------------
 
+def refresh_text(event=None):
+    text_editor.tag_remove('match',1.0,'end')
+    text_editor.tag_remove('replace',1.0,'end')
+    
+
 
 
 main_win.config(menu= main_menu)
+
+#shortcut allotment ------------------------------
+main_win.bind("<Control-f>",find_replace_text_func)
+main_win.bind("<Control-o>",open_file_func)
+main_win.bind("<Control-n>",new_file_func)
+main_win.bind("<Control-s>",save_file_func)
+main_win.bind("<Control-z>",save_as_file_func)
+main_win.bind("<Control-r>",refresh_text)
+main_win.bind("<Control-Shift-d>",lambda:text_editor.delete(1.0,'end'))
+
+# main_win.bind("<Control-f>",find_replace_text_func)
+
 main_win.mainloop()
