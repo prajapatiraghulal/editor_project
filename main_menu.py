@@ -2,7 +2,7 @@ import tkinter
 import  tkinter as tk
 from tkinter import Menu, Scrollbar, StringVar, ttk,font,filedialog,messagebox,colorchooser
 import os
-from tkinter.constants import FALSE, TRUE
+from tkinter.constants import FALSE, INSERT, TRUE
 
 
 main_win = tkinter.Tk()         #main software screen window
@@ -28,11 +28,96 @@ exit_icon= tk.PhotoImage(file='icons/exit.png')
 
 
 file_menu = tk.Menu(main_menu, tearoff=False)
-file_menu.add_command(label='New',image=new_icon,compound=tk.LEFT,accelerator='Ctrl+N')    #tk.LEFT for assigning new icon left of label, accelerator for shortcutkey
-file_menu.add_command(label='Open',image=open_icon,compound=tk.LEFT,accelerator='Ctrl+O')    #tk.LEFT for assigning new icon left of label, accelerator for shortcutkey
-file_menu.add_command(label='Save',image=save_icon,compound=tk.LEFT,accelerator='Ctrl+S')    #tk.LEFT for assigning new icon left of label, accelerator for shortcutkey
-file_menu.add_command(label='Save As',image=save_as_icon,compound=tk.LEFT,accelerator='Ctrl+Alt+S')    #tk.LEFT for assigning new icon left of label, accelerator for shortcutkey
-file_menu.add_command(label='Exit',image=exit_icon,compound=tk.LEFT,accelerator='Ctrl+Q')    #tk.LEFT for assigning new icon left of label, accelerator for shortcutkey
+
+#variables related to file --------------------
+url= ''
+#variable finish------------------------------
+#new functionality------------------------------------
+def new_file_func(event=None):
+    global url
+    url=''
+    text_editor.delete(1.0,'end')
+    main_win.title(os.path.basename(url).split('.')[0])
+    
+file_menu.add_command(label='New',image=new_icon,compound=tk.LEFT,accelerator='Ctrl+N',command=new_file_func)    #tk.LEFT for assigning new icon left of label, accelerator for shortcutkey
+#new functionality finish------------------------------------
+
+#open functionality-----------------------------------------
+def open_file_func(event=None):
+    global url
+    url = filedialog.askopenfilename(initialdir=url, title='Select File', filetypes=(('Text File','*.txt'),('Other File','*.*')))
+    try:
+        with open(url,'r') as f:
+            text_editor.delete(1.0,'end')
+            text_editor.insert(1.0,f.read())
+    except FileNotFoundError:
+        return
+    except:
+        return
+    main_win.title(os.path.basename(url).split('.')[0])
+
+file_menu.add_command(label='Open',image=open_icon,compound=tk.LEFT,accelerator='Ctrl+O',command=open_file_func)    #tk.LEFT for assigning new icon left of label, accelerator for shortcutkey
+
+#save functionality------------------------------------------------
+def save_file_func(event=None):
+    global url
+    text_content = str(text_editor.get(1.0,'end'))
+    try:
+        if url:
+            with open(url,'w',encoding='utf-8') as fw:
+                fw.write(text_content)
+                
+        else:
+            file= filedialog.asksaveasfile(mode='w',initialdir=url,title='Save File',defaultextension='.txt',filetypes=(('Text File','*.txt'),('Other File,''*.*')))
+            file.write(text_content)
+            url= file.name
+            main_win.title(os.path.basename(url).split('.')[0])
+            url.close()
+    except FileNotFoundError:
+        pass
+    except:
+        pass
+
+    
+file_menu.add_command(label='Save',image=save_icon,compound=tk.LEFT,accelerator='Ctrl+S',command=save_file_func)    #tk.LEFT for assigning new icon left of label, accelerator for shortcutkey
+
+#save functionality finish---------------------------------------------
+
+#save_as functionality ------------------------------------------------
+def save_as_file_func(event=None):
+    global url
+    text_content = str(text_editor.get(1.0,'end'))
+    try:
+        file = filedialog.asksaveasfile(mode='w', initialdir=url, title='Save As',defaultextension='.txt',filetype=(('Text File','*.txt'),('Other File','*.*')))
+        file.write(text_content)
+        url= file.name
+        main_win.title(os.path.basename(url).split('.')[0])
+    except FileNotFoundError:
+        pass
+    except:
+        pass
+
+file_menu.add_command(label='Save As',image=save_as_icon,compound=tk.LEFT,accelerator='Ctrl+Alt+S',command=save_as_file_func)    #tk.LEFT for assigning new icon left of label, accelerator for shortcutkey
+
+#save_as functionality finish-----------------------------------------------
+
+#exit functionality --------------------------------------------------------
+def exit_file_func(event=None):
+    global url
+    global text_change
+    if text_change:
+        option_selected = messagebox.askyesnocancel(title='Warning',message='Do you want to save ?!')
+        if option_selected==True:
+            save_file_func()
+            main_win.destroy()
+        elif option_selected==False:
+            main_win.destroy()
+        else:
+            pass
+
+file_menu.add_command(label='Exit',image=exit_icon,compound=tk.LEFT,accelerator='Ctrl+Q',command=exit_file_func)    #tk.LEFT for assigning new icon left of label, accelerator for shortcutkey
+
+#exit functionality finish-------------------------------------------------
 
 #-------------edit menu-------------------------------------------
 ##------------icons import and naming for edit
@@ -45,11 +130,80 @@ find_icon= tk.PhotoImage(file='icons/find.png')
 
 
 edit_menu = tk.Menu(main_menu,tearoff=False)
-edit_menu.add_command(label='Find',image= find_icon,compound=tk.LEFT,accelerator='Ctrl+F')
-edit_menu.add_command(label='Copy',image= copy_icon,compound=tk.LEFT,accelerator='Ctrl+C')
-edit_menu.add_command(label='Cut',image= cut_icon,compound=tk.LEFT,accelerator='Ctrl+X')
-edit_menu.add_command(label='Paste',image= paste_icon,compound=tk.LEFT,accelerator='Ctrl+V')
-edit_menu.add_command(label='Clear All',image= clear_all_icon,compound=tk.LEFT,accelerator='Ctrl+Shift+d')
+#--------find menu functionality -------------------------------
+
+def find_replace_text_func(event=None):
+
+    def find_text_func(event=None):
+        text_to_be_find = str(find_text_entry.get()).lower()
+        editors_text = str(text_editor.get(1.0,'end')).lower().split('\n')
+        len_finding = len(text_to_be_find)
+    
+        text_editor.tag_remove('match',1.0,'end')
+        text_editor.tag_config("match",background='yellow', foreground='magenta')
+        
+        
+        for j,line in enumerate(editors_text):
+            len_editor_text= len(line)
+            i=0
+            while i<=(len_editor_text-len_finding):
+                if(text_to_be_find[0]==line[i]):
+                    if(text_to_be_find==line[i:i+len_finding]):
+                        text_editor.tag_add('match',f'{j+1}.{i}',f'{j+1}.{i+len_finding}')
+                        i+=len_finding
+                    else:
+                        i+=1
+                else:
+                    i+=1
+        
+
+
+    def replace_text_func(event=None):
+        pass
+
+    popup_dialogue = tk.Toplevel()
+    popup_dialogue.geometry('300x200+100+50')
+    popup_dialogue.title('Find and Replace')
+    popup_dialogue.resizable(False,False)
+
+    #fram inside popup dialogue
+    frame_in_popup = ttk.Label(popup_dialogue)
+    frame_in_popup.pack(pady=50)
+
+    #label for find and replace inside frame frame_in_popup
+    find_text_label = ttk.Label(frame_in_popup,text='Enter Word:')
+    find_text_label.grid(row=0,column=0,padx=4,pady=4)
+    replace_text_label= ttk.Label(frame_in_popup,text='Replace With:')
+    replace_text_label.grid(row=1,column=0,padx=4,pady=4)
+
+    #entry box for find and replace inside frmae frame_in_popup
+    find_text_entry = ttk.Entry(frame_in_popup,width=30)
+    find_text_entry.grid(row=0,column=1,padx=4,pady=4)
+    find_text_entry.focus_set()
+    replace_text_entry = ttk.Entry(frame_in_popup,width=30)
+    replace_text_entry.grid(row=1,column=1,padx=4,pady=4)
+
+    #submit button for find replace-------------
+    find_text_btn= ttk.Button(frame_in_popup,text='Find',command=find_text_func)
+    find_text_btn.grid(row=2,column=0,padx=8,pady=8)
+    replace_text_btn= ttk.Button(frame_in_popup,text='Replace',command=replace_text_func)
+    replace_text_btn.grid(row=2,column=1,padx=0,pady=8)
+
+    popup_dialogue.mainloop()
+    
+  
+
+
+
+edit_menu.add_command(label='Find',image= find_icon,compound=tk.LEFT,accelerator='Ctrl+F',command=find_replace_text_func)
+
+
+
+
+edit_menu.add_command(label='Copy',image= copy_icon,compound=tk.LEFT,accelerator='Ctrl+C',command=lambda:text_editor.event_generate('<Control c>'))
+edit_menu.add_command(label='Cut',image= cut_icon,compound=tk.LEFT,accelerator='Ctrl+X',command=lambda:text_editor.event_generate('<Control x>'))
+edit_menu.add_command(label='Paste',image= paste_icon,compound=tk.LEFT,accelerator='Ctrl+V',command=lambda:text_editor.event_generate('<Control v>'))
+edit_menu.add_command(label='Clear All',image= clear_all_icon,compound=tk.LEFT,accelerator='Ctrl+Shift+d',command=lambda:text_editor.delete(1.0,'end'))
 
 #--------------view menu------------------------------------------
 ##-----------icon import and naming for view menu----------------
@@ -194,19 +348,53 @@ font_color_icon = tk.PhotoImage(file='icons/font_color.png')
 font_color_btn = ttk.Button(toolbar,image=font_color_icon)
 font_color_btn.grid(row=0,column=5,padx=5)
 
+def change_font_color():
+    asked_font_color = colorchooser.askcolor()      #this method returns chosen color by user in rgb and hex value at index 0and 1
+    text_editor.configure(fg=asked_font_color[1]) 
+
+font_color_btn.configure(command=change_font_color) 
+
+
 ###---------font align left button--------------------
 font_align_left_icon = tk.PhotoImage(file='icons/align_left.png')
 font_align_left_btn = ttk.Button(toolbar,image=font_align_left_icon)
 font_align_left_btn.grid(row=0,column=6,padx=5)
 
+
+def change_font_align_left():
+    text_content = text_editor.get(1.0,'end-1c')   #with get all text written in editor and store in variable
+    text_editor.tag_config('left',justify=tk.LEFT)
+    text_editor.delete(1.0,'end')
+    text_editor.insert(tk.INSERT,text_content,'left')
+font_align_left_btn.configure(command=change_font_align_left)
+
+
 ###-----------font align center button------------------------------
 font_align_center_icon = tk.PhotoImage(file='icons/align_center.png')
 font_align_center_btn = ttk.Button(toolbar,image=font_align_center_icon)
 font_align_center_btn.grid(row=0,column=7,padx=5)
+
+
+def change_font_align_center():
+    text_content = text_editor.get(1.0,'end-1c')   #with get all text written in editor and store in variable
+    text_editor.tag_config('center',justify=tk.CENTER)
+    text_editor.delete(1.0,'end')
+    text_editor.insert(tk.INSERT,text_content,'center')
+font_align_center_btn.configure(command=change_font_align_center)
+
 ###-----------font align right button----------------------------------
 font_align_right_icon = tk.PhotoImage(file='icons/align_right.png')
 font_align_right_btn = ttk.Button(toolbar,image=font_align_right_icon)
 font_align_right_btn.grid(row=0,column=8,padx=5)
+
+
+
+def change_font_align_right():
+    text_content = text_editor.get(1.0,'end-1c')   #with get all text written in editor and store in variable
+    text_editor.tag_config('right',justify=tk.RIGHT)
+    text_editor.delete(1.0,'end')
+    text_editor.insert(tk.INSERT,text_content,'right')
+font_align_right_btn.configure(command=change_font_align_right)
 
 ###################----------------toolbar finish---------------------#########################3
 
@@ -223,15 +411,35 @@ scrollbar.config(command=text_editor.yview)
 text_editor.config(yscrollcommand=scrollbar.set)
 
 
+# # #for making everything highlighted into normal 
+# # def tag_removal(event=None):
+# #     if text_editor.edit_modified():
+# #         text_editor.tag_delete('match',1.0,'end')
+# #     text_editor.edit_modified(False)
+
+# # text_editor.bind('<<Modified>>',tag_removal)
+
 #-------------------text + toolbar finish ----------------------------------------------------------
 
 ##------------------status bar ---------------------------------------------------
 status_bar = ttk.Label(main_win, text='Status Bar')
 status_bar.pack(side=tk.BOTTOM)
 
+text_change = False
+def change_count(main_win):
+    global text_change
+    if text_editor.edit_modified():
+        text_change=True
+        text = text_editor.get(1.0,'end-1c')
+        words = len(text.split())
+        character = len(text)
+        status_bar.config(text=f' words : {words}, characters : {character} ')
+    text_editor.edit_modified(False)
+
+text_editor.bind('<<Modified>>',change_count)
+
+
 ##-----------------status bar finish-------------------------------------------
-
-
 
 
 
